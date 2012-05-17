@@ -29,32 +29,34 @@ usage() {
 
 tree_print() {
 	$DB "SELECT id, parent, lft, rgt, name FROM tree $1 ORDER BY lft ASC" | {
-		local R=() # Reversed list
-		local L=()
-		while IFS='|' read ID PARENT LFT RGT NAME; do
+		local S=""     # Stack of RGT's
+		local P=""     # Prefix string for drawing tree
 
-			while [ ${#R[@]} -gt 0 ] && [ ${R[0]} -lt $RGT ]; do 
-				R=(${R[@]:1})
+		while IFS=\| read ID PAR LFT RGT NAME; do
+
+			while [ ${#S} -gt 0 ] && [ ${S%% *} -lt $RGT ]; do 
+				S="${S#* }"
+				P="${P%???}"
 			done
-			L=("${L[@]:0:${#R[@]}}" " |")
+			P="$P  |"
 
-			printf "%3s[%3s] %3s-%-3s   %s\n" $ID $PARENT $LFT $RGT "${L[@]}- $NAME"
+			printf "%3s[%3s] %3s-%-3s   %s\n" $ID $PAR $LFT $RGT "$P- $NAME"
 
 			# When node is last under it's parent
-			if [ ${#R[@]} -eq 0 ] || [ $((${R[0]}-1)) -eq $RGT ]; then
-				L[${#R[@]}]="  "
+			if [ ${#S} -eq 0 ] || [ $((${S%% *}-1)) -eq $RGT ]; then
+				P="${P%?} "
 			fi
 
-			R=( $RGT "${R[@]}" )
+			S="$RGT $S"
 		done
 	}
 }
 
 
 tree_resize() {
-	[ $2 -gt 0 ] && $DB "UPDATE tree SET rgt=rgt+$2 WHERE rgt>=$1 AND lft<rgt;"
-	$DB "UPDATE tree SET lft=lft+($2) WHERE lft>$1 AND lft<rgt;"
-	[ $2 -lt 0 ] && $DB "UPDATE tree SET rgt=rgt+($2) WHERE rgt>$1 AND lft<rgt;"
+	[ $2 -gt 0 ] && $DB "UPDATE tree SET rgt=rgt+$2 WHERE rgt>=$1 AND lft<rgt"
+	$DB "UPDATE tree SET lft=lft+($2) WHERE lft>$1 AND lft<rgt"
+	[ $2 -lt 0 ] && $DB "UPDATE tree SET rgt=rgt+($2) WHERE rgt>$1 AND lft<rgt"
 	return 0
 }
 
@@ -109,7 +111,7 @@ case $1 in
 		;;
 	del)
 		$DB "SELECT lft, rgt, rgt-lft+1 FROM tree WHERE id=$2" | {
-			IFS='|' read LFT RGT LEN
+			IFS=\| read LFT RGT LEN
 
 			$DB "DELETE FROM tree WHERE lft>=$LFT AND lft<$RGT"
 			tree_resize $RGT -$LEN
@@ -118,18 +120,18 @@ case $1 in
 		;;
 	delOne)
 		$DB "SELECT lft, rgt, parent FROM tree WHERE id=$2" | {
-			IFS='|' read LFT RGT PARENT
+			IFS=\| read LFT RGT PAR
 
 			$DB "DELETE FROM tree WHERE lft=$LFT"
 			$DB "UPDATE tree SET lft=lft-1, rgt=rgt-1 WHERE lft>$LFT AND lft<$RGT"
 			tree_resize $RGT -2
-			$DB "UPDATE tree SET parent=$PARENT where parent=$2"
+			$DB "UPDATE tree SET parent=$PAR WHERE parent=$2"
 		}
 		tree_print
 		;;
 	move)
 		$DB "SELECT lft, rgt, rgt-lft+1 FROM tree WHERE id=$2" | {
-			IFS='|' read LFT RGT LEN
+			IFS=\| read LFT RGT LEN
 
 			NEW_RGT=$($DB "SELECT rgt FROM tree WHERE id=$3")
 			if [ $NEW_RGT -ge $LFT -a $NEW_RGT -le $RGT ]; then
@@ -156,8 +158,8 @@ case $1 in
 		;;
 	swap)
 		$DB "SELECT id, lft, rgt, parent, rgt-lft+1 FROM tree WHERE id IN ($2, $3) ORDER BY lft" | {
-			IFS='|' read ID_A LFT_A RGT_A PAR_A LEN_A
-			IFS='|' read ID_B LFT_B RGT_B PAR_B LEN_B
+			IFS=\| read ID_A LFT_A RGT_A PAR_A LEN_A
+			IFS=\| read ID_B LFT_B RGT_B PAR_B LEN_B
 
 			if [ $LFT_B -ge $LFT_A -a $LFT_B -le $RGT_A ]; then
 				echo "Illegal swap"
@@ -193,22 +195,22 @@ case $1 in
 		;;
 	order)
 		$DB "SELECT id FROM tree WHERE parent=$2 ORDER BY lft ASC" | {
-			DIFF=( )
-			ARR=( ${3//,/ } )
-			POS=0
+			DIFF=""
+			ARR="$3,"
 			while read ID; do
-				[ ${ARR[$POS]} -ne $ID ] && DIFF=(${DIFF[@]} $ID)
-				POS=$(($POS+1))
+				test "${ARR%%,*}" -ne "$ID" && DIFF="$DIFF $ID"
+				ARR="${ARR#*,} ${ARR%%,*}"
 			done
-			if [ ${#DIFF[@]} -eq 0 ]; then
+			if [ ${#DIFF} -eq 0 ]; then
 				echo "Nothing changed"
-			elif [ ${#DIFF[@]} -eq 2 ]; then
-				echo "Swap"
-				$0 swap ${DIFF[0]} ${DIFF[1]}
+			# FIXME: $DIFF lenght does not show nember of nodes
+			#elif [ ${#DIFF} -eq 2 ]; then
+			#	echo "Swap $DIFF"
+			#	$0 swap "${DIFF% *}" "${DIFF#* }"
 			else
 				POS=0
 				echo "Sort with rebuild"
-				for ID in ${ARR[@]}; do
+				for ID in $ARR; do
 					$DB "UPDATE tree SET lft=$POS WHERE id=$ID AND parent=$2"
 					POS=$(($POS+1))
 				done
