@@ -15,7 +15,7 @@
 #
 
 
-DB="sqlite3 example.db"
+DB="sqlite3 ${0%.*}.db"
 
 
 # Exit the script if any statement returns a non-true return value
@@ -94,7 +94,7 @@ tree_rebuild() {
 
 case $1 in
 	init)
-		$DB < example.sql
+		$DB < "${0%.*}.sql"
 		tree_print
 		;;
 	add|addLast)
@@ -138,19 +138,19 @@ case $1 in
 				echo "Illegal move"
 				exit 1
 			fi
-			# paneme liigutatavad kõrvale, allpool neid ei puutu kus lft>rgt
+			# Mark moved nodes, later we do not touch where lft>rgt
 			$DB "UPDATE tree SET lft=lft+rgt WHERE lft>=$LFT AND lft<$RGT"
 
-			# teeme augu, kuhu liigutatavad tõstame, kõrvale panduid ei puudu
+			# Make a new hole for marked nodes
 			tree_resize $NEW_RGT $LEN
 
-			# paneme vana augu kinni, kust liigutatavad ära võtame, liigutatavaid ei puutu
+			# Close old hole
 			tree_resize $RGT -$LEN
 
-			# selle saaks ilma päringuta teha aga küsime baasist, kui suur on kahe augu vahe
+			# Find diff between old and new hole
 			DIFF=$($DB "SELECT $RGT-rgt+1 FROM tree WHERE id=$3")
 
-			# tõstame kõrvale pandud tekitatud auku
+			# Move marked nodes into new positions
 			$DB "UPDATE tree SET lft=lft-rgt-($DIFF), rgt=rgt-($DIFF) WHERE lft>rgt"
 			$DB "UPDATE tree SET parent=$3 WHERE id=$2"
 		}
@@ -166,24 +166,24 @@ case $1 in
 				exit 1
 			fi
 
-			# vajadusel vahetame parentid
+			# Update parents when needed
 			if [ $PAR_A -ne $PAR_B ]; then
 				$DB "UPDATE tree SET parent=$PAR_B WHERE id=$ID_A"
 				$DB "UPDATE tree SET parent=$PAR_A WHERE id=$ID_B"
 			fi
 
-			# paneme liigutatavad vahemikud kõrvale, allpool neid ei puutu kus lft>rgt
+			# Mark moved nodes, later we do not touch where lft>rgt
 			$DB "UPDATE tree SET lft=lft+rgt WHERE lft>=$LFT_A AND lft<$RGT_A"
 			$DB "UPDATE tree SET lft=lft+rgt WHERE lft>=$LFT_B AND lft<$RGT_B AND lft<rgt"
 
 			LEN_DIFF=$(($LEN_B-$LEN_A))
-			# vahetame vajadusel aukude suurused
+			# Resize holes when needed
 			if [ $LEN_DIFF -ne 0 ]; then
 				tree_resize $RGT_B $((0-$LEN_DIFF))
 				tree_resize $RGT_A $LEN_DIFF
 			fi
 
-			# tõstame kõrvale pandud vahemikud aukudesse
+			# Move marked nodes into new positions
 			LFT_DIFF=$(($LFT_B-$LFT_A))
 			$DB "UPDATE tree SET lft=lft-rgt-$LFT_DIFF, rgt=rgt-$LFT_DIFF WHERE lft>rgt AND rgt>$LFT_B AND rgt<=$RGT_B"
 
@@ -242,7 +242,7 @@ case $1 in
 		tree_print
 		;;
 	reset)
-		rm "example.db"
+		rm "${0%.*}.db"
 		$0 init
 		;;
 	*)
