@@ -130,5 +130,19 @@ $ ./nested-set.sh leafs
   6[  5]   6-7      |- Tedre
   7[  5]   8-9      |- Käo
   9[  8]  14-15     |- Rapla
+
+11:15:16 Lauri@hp /code/repo/nested-set (master *)
+$ ./nested-set.sh order 5 '7,6'
+Swap  6 7
+  1[  0]   1-18      |- root
+  2[  1]   2-17         |- Eesti
+  3[  2]   3-12            |- Harjumaa
+  4[  3]   4-11            |  |- Tallinn
+  5[  4]   5-10            |     |- Kristiine
+  7[  5]   6-7             |        |- Käo
+  6[  5]   8-9             |        |- Tedre
+  8[  2]  13-16            |- Raplamaa
+  9[  8]  14-15               |- Rapla
+
 </pre>
 
