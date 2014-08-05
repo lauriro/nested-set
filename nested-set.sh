@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -e
 #
 #-
 #- Nested set model example
@@ -18,36 +18,27 @@
 DB="sqlite3 ${0%.*}.db"
 
 
-# Exit the script if any statement returns a non-true return value
-set -e
-
-
-usage() {
-	sed -n "/^#- \?/s///p" "$0" >&2
-}
-
-
 tree_print() {
 	$DB "SELECT id, parent, lft, rgt, name FROM tree $1 ORDER BY lft ASC" | {
-		local S=""     # Stack of RGT's
-		local P=""     # Prefix string for drawing tree
+		local RGTS=""       # Stack of RGT's
+		local INDENT=""     # Prefix string for drawing tree
 
 		while IFS=\| read ID PAR LFT RGT NAME; do
 
-			while [ ${#S} -gt 0 ] && [ ${S%% *} -lt $RGT ]; do
-				S="${S#* }"
-				P="${P%???}"
+			while [ ${#RGTS} -gt 0 ] && [ ${RGTS%% *} -lt $RGT ]; do
+				RGTS="${RGTS#* }"
+				INDENT="${INDENT%???}"
 			done
-			P="$P  |"
+			INDENT="$INDENT  |"
 
-			printf "%3s[%3s] %3s-%-3s   %s\n" $ID $PAR $LFT $RGT "$P- $NAME"
+			printf "%3s[%3s] %4s-%-4s   %s\n" $ID $PAR $LFT $RGT "$INDENT- $NAME"
 
 			# When node is last under it's parent
-			if [ ${#S} -eq 0 ] || [ $((${S%% *}-1)) -eq $RGT ]; then
-				P="${P%?} "
+			if [ ${#RGTS} -eq 0 ] || [ $((${RGTS%% *}-1)) -eq $RGT ]; then
+				INDENT="${INDENT%?} "
 			fi
 
-			S="$RGT $S"
+			RGTS="$RGT $RGTS"
 		done
 	}
 }
@@ -78,6 +69,7 @@ tree_rebuild() {
 
 #- Commands are:
 #-   init                          Create database
+#-   print                         Print tree
 #-   add [parent_id] [name]        Add node to end
 #-   addFirst [parent_id] [name]   Add node to beginning
 #-   del [node_id]                 Remove node with childs
@@ -245,7 +237,7 @@ case $1 in
 		$0 init
 		;;
 	*)
-		usage
+		sed -n "/^#- \?/s///p" "$0" >&2
 		;;
 esac
 
