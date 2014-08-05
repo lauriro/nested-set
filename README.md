@@ -11,15 +11,15 @@ Nested set model example
 
 Commands are:
   init                          Create database
-  add <parent_id> <name>        Add node to end
-  addFirst <parent_id> <name>   Add node to beginning
-  del <node_id>                 Remove node with childs
-  delOne <node_id>              Remove only node and move childs under parent
-  move <node_id> <parent_id>    Move node under new parent
-  swap <node_id> <node_id>      Swap two node with childs
-  order <node_id> <child_ids>   Sort childs
-  path <node_id>                Print path
-  childs <node_id>              Print childs
+  add [parent_id] [name]        Add node to end
+  addFirst [parent_id] [name]   Add node to beginning
+  del [node_id]                 Remove node with childs
+  delOne [node_id]              Remove only node and move childs under parent
+  move [node_id] [parent_id]    Move node under new parent
+  swap [node_id] [node_id]      Swap two node with childs
+  order [node_id] [child_ids]   Sort childs
+  path [node_id]                Print path
+  childs [node_id]              Print childs
   leafs                         Print leafs
   rebuild                       Rebuild left and right indexes
   reset                         Delete database and init again
