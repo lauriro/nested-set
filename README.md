@@ -24,113 +24,52 @@ Commands are:
   rebuild                       Rebuild left and right indexes
   reset                         Delete database and init again
 
+
 $ ./nested-set.sh init
-  1[  0]   1-12     |- root
-  2[  1]   2-11        |- Eesti
-  3[  2]   3-10           |- Harjumaa
-  4[  3]   4-9               |- Tallinn
-  5[  4]   5-8                  |- Kristiine
-  6[  5]   6-7                     |- Tedre
+  1[  0]   1-16    └─┬ World
+  2[  1]   2-3       ├── Europe
+  3[  1]   4-15      └─┬ Asia
+  4[  3]   5-10        ├─┬ China
+  5[  4]   6-7         │ ├── Shanghai
+  6[  4]   8-9         │ └── Beijing
+  7[  3]  11-14        └─┬ India
+  8[  7]  12-13          └── Mumbai
 
-$ ./nested-set.sh add 5 'Käo'
-  1[  0]   1-14     |- root
-  2[  1]   2-13        |- Eesti
-  3[  2]   3-12           |- Harjumaa
-  4[  3]   4-11              |- Tallinn
-  5[  4]   5-10                 |- Kristiine
-  6[  5]   6-7                     |- Tedre
-  7[  5]   8-9                     |- Käo
+$ ./nested-set.sh add 2 Germany
+  1[  0]   1-18    └─┬ World
+  2[  1]   2-5       ├─┬ Europe
+  9[  2]   3-4       │ └── Germany
+  3[  1]   6-17      └─┬ Asia
+  4[  3]   7-12        ├─┬ China
+  5[  4]   8-9         │ ├── Shanghai
+  6[  4]  10-11        │ └── Beijing
+  7[  3]  13-16        └─┬ India
+  8[  7]  14-15          └── Mumbai
 
-$ ./nested-set.sh add 2 'Raplamaa'
-  1[  0]   1-16     |- root
-  2[  1]   2-15        |- Eesti
-  3[  2]   3-12           |- Harjumaa
-  4[  3]   4-11           |  |- Tallinn
-  5[  4]   5-10           |     |- Kristiine
-  6[  5]   6-7            |        |- Tedre
-  7[  5]   8-9            |        |- Käo
-  8[  2]  13-14           |- Raplamaa
-
-$ ./nested-set.sh add 8 'Rapla'
-  1[  0]   1-18     |- root
-  2[  1]   2-17        |- Eesti
-  3[  2]   3-12           |- Harjumaa
-  4[  3]   4-11           |  |- Tallinn
-  5[  4]   5-10           |     |- Kristiine
-  6[  5]   6-7            |        |- Tedre
-  7[  5]   8-9            |        |- Käo
-  8[  2]  13-16           |- Raplamaa
-  9[  8]  14-15              |- Rapla
-
-$ ./nested-set.sh move 8 1
-  1[  0]   1-18     |- root
-  2[  1]   2-13        |- Eesti
-  3[  2]   3-12        |  |- Harjumaa
-  4[  3]   4-11        |     |- Tallinn
-  5[  4]   5-10        |        |- Kristiine
-  6[  5]   6-7         |           |- Tedre
-  7[  5]   8-9         |           |- Käo
-  8[  1]  14-17        |- Raplamaa
-  9[  8]  15-16           |- Rapla
-
-$ ./nested-set.sh move 8 2
-  1[  0]   1-18     |- root
-  2[  1]   2-17        |- Eesti
-  3[  2]   3-12           |- Harjumaa
-  4[  3]   4-11           |  |- Tallinn
-  5[  4]   5-10           |     |- Kristiine
-  6[  5]   6-7            |        |- Tedre
-  7[  5]   8-9            |        |- Käo
-  8[  2]  13-16           |- Raplamaa
-  9[  8]  14-15              |- Rapla
-
-$ ./nested-set.sh swap 3 8
-  1[  0]   1-18     |- root
-  2[  1]   2-17        |- Eesti
-  8[  2]   3-6            |- Raplamaa
-  9[  8]   4-5            |  |- Rapla
-  3[  2]   7-16           |- Harjumaa
-  4[  3]   8-15              |- Tallinn
-  5[  4]   9-14                 |- Kristiine
-  6[  5]  10-11                    |- Tedre
-  7[  5]  12-13                    |- Käo
-
-$ ./nested-set.sh swap 3 8
-  1[  0]   1-18     |- root
-  2[  1]   2-17        |- Eesti
-  3[  2]   3-12           |- Harjumaa
-  4[  3]   4-11           |  |- Tallinn
-  5[  4]   5-10           |     |- Kristiine
-  6[  5]   6-7            |        |- Tedre
-  7[  5]   8-9            |        |- Käo
-  8[  2]  13-16           |- Raplamaa
-  9[  8]  14-15              |- Rapla
+$ ./nested-set.sh swap 3 2
+  1[  0]   1-18    └─┬ World
+  3[  1]   2-13      ├─┬ Asia
+  4[  3]   3-8       │ ├─┬ China
+  5[  4]   4-5       │ │ ├── Shanghai
+  6[  4]   6-7       │ │ └── Beijing
+  7[  3]   9-12      │ └─┬ India
+  8[  7]  10-11      │   └── Mumbai
+  2[  1]  14-17      └─┬ Europe
+  9[  2]  15-16        └── Germany
 
 $ ./nested-set.sh path 8
-  1[  0]   1-18     |- root
-  2[  1]   2-17        |- Eesti
-  8[  2]  13-16           |- Raplamaa
+  1[  0]   1-18    └─┬ World
+  3[  1]   2-13      ├─┬ Asia
+  7[  3]   9-12      │ └─┬ India
+  8[  7]  10-11      │   └── Mumbai
 
-$ ./nested-set.sh childs 8
-  8[  2]  13-16     |- Raplamaa
-  9[  8]  14-15        |- Rapla
-
-$ ./nested-set.sh leafs
-  6[  5]   6-7      |- Tedre
-  7[  5]   8-9      |- Käo
-  9[  8]  14-15     |- Rapla
-
-$ ./nested-set.sh order 5 '7,6'
-Swap  6 7
-  1[  0]   1-18      |- root
-  2[  1]   2-17         |- Eesti
-  3[  2]   3-12            |- Harjumaa
-  4[  3]   4-11            |  |- Tallinn
-  5[  4]   5-10            |     |- Kristiine
-  7[  5]   6-7             |        |- Käo
-  6[  5]   8-9             |        |- Tedre
-  8[  2]  13-16            |- Raplamaa
-  9[  8]  14-15               |- Rapla
+$ ./nested-set.sh childs 3
+  3[  1]   2-13    └─┬ Asia
+  4[  3]   3-8       ├─┬ China
+  5[  4]   4-5       │ ├── Shanghai
+  6[  4]   6-7       │ └── Beijing
+  7[  3]   9-12      └─┬ India
+  8[  7]  10-11        └── Mumbai
 
 </pre>
 

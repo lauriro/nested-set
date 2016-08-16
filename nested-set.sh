@@ -21,22 +21,27 @@ DB="sqlite3 ${0%.*}.db"
 tree_print() {
 	$DB "SELECT id, parent, lft, rgt, name FROM tree $1 ORDER BY lft ASC" | {
 		local RGTS=""       # Stack of RGT's
-		local INDENT=""     # Prefix string for drawing tree
+		local INDENT=""     # Prefix for drawing tree
 
-		while IFS=\| read ID PAR LFT RGT NAME; do
-
-			while [ ${#RGTS} -gt 0 ] && [ ${RGTS%% *} -lt $RGT ]; do
-				RGTS="${RGTS#* }"
-				INDENT="${INDENT%???}"
+		while IFS=\| read ID PARENT LFT RGT NAME; do
+			while [ -n "$RGTS" ] && [ ${RGTS%% *} -lt $RGT ]; do
+				RGTS=${RGTS#* }
+				INDENT=${INDENT%??}
 			done
-			INDENT="$INDENT  |"
-
-			printf "%3s[%3s] %4s-%-4s   %s\n" $ID $PAR $LFT $RGT "$INDENT- $NAME"
-
-			# When node is last under it's parent
-			if [ ${#RGTS} -eq 0 ] || [ $((${RGTS%% *}-1)) -eq $RGT ]; then
-				INDENT="${INDENT%?} "
+			# Node is last under it's parent
+			if [ -z "$RGTS" ] || [ $((${RGTS%% *}-1)) -eq $RGT ]; then
+				I="$INDENT └─┬"
+				INDENT="$INDENT  "
+			else
+				I="$INDENT ├─┬"
+				INDENT="$INDENT │"
 			fi
+
+			# Node have no childs
+			test $(($RGT-$LFT)) -eq 1 && I="${I%?}─"
+			#expr $RGT - $LFT = 1 >/dev/null && I="${I%?}─"
+
+			printf "%3s[%3s] %3s-%-3s  %s\n" $ID $PARENT $LFT $RGT "$I $NAME"
 
 			RGTS="$RGT $RGTS"
 		done
@@ -112,12 +117,12 @@ case $1 in
 		;;
 	delOne)
 		$DB "SELECT lft, rgt, parent FROM tree WHERE id=$2" | {
-			IFS=\| read LFT RGT PAR
+			IFS=\| read LFT RGT PARENT
 
 			$DB "DELETE FROM tree WHERE lft=$LFT"
 			$DB "UPDATE tree SET lft=lft-1, rgt=rgt-1 WHERE lft>$LFT AND lft<$RGT"
 			tree_resize $RGT -2
-			$DB "UPDATE tree SET parent=$PAR WHERE parent=$2"
+			$DB "UPDATE tree SET parent=$PARENT WHERE parent=$2"
 		}
 		tree_print
 		;;
